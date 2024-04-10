@@ -36,5 +36,5 @@ app.use(ROUTES_PREFIX, health_route)
 app.use(ROUTES_PREFIX, user_activity_route)
 
 app.listen(process.env.PORT || 8801 , () => {
-    console.log(`Profile service (env: ${APP_ENV}) is running...`)
+    console.log(`Vticket logging service (env: ${APP_ENV}) is running...`)
 })

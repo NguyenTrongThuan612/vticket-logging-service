@@ -4,6 +4,7 @@ const dotenv = require('dotenv')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const cors = require('cors')
+const axios = require("axios")
 
 const health_route = require("./routes/health_route")
 const user_activity_route = require("./routes/user_activity_log_route")
@@ -37,4 +38,10 @@ app.use(ROUTES_PREFIX, user_activity_route)
 
 app.listen(process.env.PORT || 8801 , () => {
     console.log(`Vticket logging service (env: ${APP_ENV}) is running...`)
+    setInterval(() => {
+        console.log("Keep alive")
+        axios.get("https://vticket-payment-service.onrender.com/apis/vticket-payment-service/v1/health/check")
+        axios.get("https://vticket-event-service.onrender.com/apis/vticket-event-service/v1/health/check")
+        axios.get("https://vticket-account-service.onrender.com/apis/vticket-account-service/v1/health/check")
+    }, 5000)
 })

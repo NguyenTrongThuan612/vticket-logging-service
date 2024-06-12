@@ -38,7 +38,7 @@ app.use(ROUTES_PREFIX, health_route)
 app.listen(process.env.PORT || 8801 , () => {
     (async () => {
         try {
-          const connection = await amqp.connect(AMQP_URL);
+          const connection = await amqp.connect(AMQP_URL, { clientProperties: { "connection_name": "logging_service" } });
           const channel = await connection.createChannel();
       
           process.once("SIGINT", async () => {

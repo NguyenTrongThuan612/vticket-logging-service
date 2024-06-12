@@ -4,16 +4,16 @@ const dotenv = require('dotenv')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const cors = require('cors')
-const axios = require("axios")
+const amqp = require("amqplib")
 
 const health_route = require("./routes/health_route")
-const user_activity_route = require("./routes/user_activity_log_route")
+const {save_system_log} = require("./controllers/system_log_consumer")
 
 dotenv.config()
 
 const app = express()
 
-const { MONGO_DB_URL, APP_ENV, ROUTES_PREFIX } = require('./configs/app_config')
+const { MONGO_DB_URL, APP_ENV, ROUTES_PREFIX, AMQP_URL } = require('./configs/app_config')
 
 app.use(express.json())
 app.use(helmet())
@@ -34,14 +34,37 @@ app.use(function (req, res, next) {
 })
 
 app.use(ROUTES_PREFIX, health_route)
-app.use(ROUTES_PREFIX, user_activity_route)
 
 app.listen(process.env.PORT || 8801 , () => {
+    (async () => {
+        try {
+          const connection = await amqp.connect(AMQP_URL);
+          const channel = await connection.createChannel();
+      
+          process.once("SIGINT", async () => {
+            await channel.close();
+            await connection.close();
+          });
+      
+          await channel.assertQueue("system_log", { durable: false });
+          await channel.consume(
+            "system_log",
+            (message) => {
+              if (message) {
+                save_system_log(message.content.toString())
+                console.log(
+                  "Received '%s'",
+                  message.content.toString()
+                );
+              }
+            },
+            { noAck: true }
+          );
+      
+        } catch (err) {
+          console.warn(err);
+        }
+      })()
+
     console.log(`Vticket logging service (env: ${APP_ENV}) is running...`)
-    // setInterval(() => {
-    //     console.log("Keep alive")
-    //     axios.get("https://vticket-payment-service.onrender.com/apis/vticket-payment-service/v1/health/check")
-    //     axios.get("https://vticket-event-service.onrender.com/apis/vticket-event-service/v1/health/check")
-    //     axios.get("https://vticket-account-service.onrender.com/apis/vticket-account-service/v1/health/check")
-    // }, 5000)
 })

@@ -1,5 +1,5 @@
 const health_check = (req, res) => {
-    return res.json(
+    return res.status(200).json(
         {
             "env": process.env.APP_ENV
         }
